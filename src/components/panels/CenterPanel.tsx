@@ -1,6 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 
-const CenterPanel: React.FC = () => {
+interface CenterPanelProps {
+  isEditing: boolean;
+}
+
+const CenterPanel: React.FC<CenterPanelProps> = ({ isEditing }) => {
+  // Add state for selected time slots
+  const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set());
+
   // Generate array of next 7 days starting from today
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
@@ -21,6 +28,21 @@ const CenterPanel: React.FC = () => {
       month: 'short', 
       day: 'numeric' 
     });
+  };
+
+  const handleSlotClick = (dayIndex: number, slotIndex: number) => {
+    if (!isEditing) return;
+
+    const slotKey = `${dayIndex}-${slotIndex}`;
+    const newSelected = new Set(selectedSlots);
+
+    if (newSelected.has(slotKey)) {
+      newSelected.delete(slotKey);
+    } else {
+      newSelected.add(slotKey);
+    }
+
+    setSelectedSlots(newSelected);
   };
 
   return (
@@ -52,13 +74,21 @@ const CenterPanel: React.FC = () => {
                 {formatDate(day)}
               </div>
               {/* Time Slots */}
-              {timeSlots.map((_, slotIndex) => (
-                <div
-                  key={slotIndex}
-                  className={`h-6 border-b border-r border-gray-100 bg-white
-                    ${slotIndex % 2 === 0 ? 'border-gray-200' : 'border-gray-100'}`}
-                />
-              ))}
+              {timeSlots.map((_, slotIndex) => {
+                const slotKey = `${dayIndex}-${slotIndex}`;
+                const isSelected = selectedSlots.has(slotKey);
+
+                return (
+                  <div
+                    key={slotIndex}
+                    onClick={() => handleSlotClick(dayIndex, slotIndex)}
+                    className={`h-6 border-b border-r border-gray-100 
+                      ${isSelected ? 'bg-green-100' : 'bg-white'}
+                      ${slotIndex % 2 === 0 ? 'border-gray-200' : 'border-gray-100'}
+                      ${isEditing ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                  />
+                );
+              })}
             </div>
           ))}
         </div>

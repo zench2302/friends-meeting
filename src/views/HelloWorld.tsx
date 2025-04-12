@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { LeftPanel, CenterPanel, RightPanel } from "../components/panels";
 
 const HelloWorld = () => {
+  const [isEditing, setIsEditing] = useState(false);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
@@ -16,8 +18,8 @@ const HelloWorld = () => {
       {/* Panel Container */}
       <main className="flex-grow flex overflow-hidden p-4 md:p-6 lg:p-8 pt-4">
         <div className="max-w-7xl mx-auto w-full flex">
-          <LeftPanel />
-          <CenterPanel />
+          <LeftPanel isEditing={isEditing} onToggleEdit={() => setIsEditing(!isEditing)} />
+          <CenterPanel isEditing={isEditing} />
           <RightPanel />
         </div>
       </main>

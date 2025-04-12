@@ -1,6 +1,11 @@
 import React from "react";
 
-const LeftPanel: React.FC = () => {
+interface LeftPanelProps {
+  isEditing: boolean;
+  onToggleEdit: () => void;
+}
+
+const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
   return (
     <div className="w-full md:w-1/5 bg-white p-4 overflow-y-auto border-r border-gray-200">
       {/* User Profile Section */}
@@ -19,8 +24,15 @@ const LeftPanel: React.FC = () => {
 
       {/* Action Buttons */}
       <div className="flex justify-between gap-2">
-        <button className="px-4 py-2 bg-green-500 text-white rounded-lg font-['Arial']">
-          Add on
+        <button 
+          className={`px-4 py-2 text-white rounded-lg font-['Arial'] transition-colors
+            ${isEditing 
+              ? 'bg-gray-500 hover:bg-gray-600' 
+              : 'bg-green-500 hover:bg-green-600'
+            }`}
+          onClick={onToggleEdit}
+        >
+          {isEditing ? 'Done' : 'Add on'}
         </button>
         <button className="px-4 py-2 bg-blue-500 text-white rounded-lg font-['Arial']">
           Reset

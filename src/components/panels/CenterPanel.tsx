@@ -1,5 +1,7 @@
 import React from "react";
 import { useCalendarStore } from "../../stores/calendarStore";
+import { CALENDAR_COLORS } from "../../constants/colors";
+import { HIGHLIGHT_COLOR } from "../../constants/colors";
 
 interface CenterPanelProps {
   isEditing: boolean;
@@ -40,9 +42,9 @@ const CenterPanel: React.FC<CenterPanelProps> = ({ isEditing }) => {
     const slotKey = `${dayIndex}-${slotIndex}`;
     const hour = Math.floor(slotIndex / 2);
     
-    // 用户手动选择的时间槽显示实心绿色
+    // 用户手动选择的时间槽
     if (selectedSlots.has(slotKey)) {
-      return 'rgb(74, 222, 128)';
+      return HIGHLIGHT_COLOR.BASE;
     }
 
     // 检查是否在任何用户的空闲时间内
@@ -58,9 +60,8 @@ const CenterPanel: React.FC<CenterPanelProps> = ({ isEditing }) => {
       return 'white';
     }
 
-    // 根据重叠的人数增加不透明度
-    const opacity = Math.min(0.2 + (overlappingFriends.length * 0.2), 0.9);
-    return `rgba(74, 222, 128, ${opacity})`; // 使用统一的绿色，仅改变透明度
+    // 使用重叠颜色
+    return HIGHLIGHT_COLOR.OVERLAP(overlappingFriends.length);
   };
 
   return (

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAvailabilityStore } from "../../stores/availabilityStore";
 import { useCalendarStore } from "../../stores/calendarStore";
+import { HIGHLIGHT_COLOR } from "../../constants/colors";
 
 interface User {
   id: string;
@@ -17,40 +18,40 @@ const initialUsers: User[] = [
     name: 'Iheb', 
     emoji: '😄', 
     avatar: '👤',
-    freeTime: [{ dayIndex: 4, startHour: 13, endHour: 15 }], // Apr 15
-    color: '#FF6B6B' 
+    freeTime: [{ dayIndex: 4, startHour: 13, endHour: 15 }],
+    color: HIGHLIGHT_COLOR.BASE
   },
   { 
     id: '2', 
     name: 'Himanshu', 
     emoji: '😢', 
     avatar: '👤',
-    freeTime: [{ dayIndex: 4, startHour: 16, endHour: 18 }], // Apr 15
-    color: '#4ECDC4'
+    freeTime: [{ dayIndex: 4, startHour: 16, endHour: 18 }],
+    color: HIGHLIGHT_COLOR.BASE
   },
   { 
     id: '3', 
     name: 'Rio', 
     emoji: '😂', 
     avatar: '👤',
-    freeTime: [{ dayIndex: 4, startHour: 11, endHour: 17 }], // Apr 15
-    color: '#45B7D1'
+    freeTime: [{ dayIndex: 4, startHour: 11, endHour: 17 }],
+    color: HIGHLIGHT_COLOR.BASE
   },
   { 
     id: '4', 
     name: 'Kevin', 
     emoji: '😍', 
     avatar: '👤',
-    freeTime: [{ dayIndex: 5, startHour: 15, endHour: 17 }], // Apr 16
-    color: '#96CEB4'
+    freeTime: [{ dayIndex: 5, startHour: 15, endHour: 17 }],
+    color: HIGHLIGHT_COLOR.BASE
   },
   { 
     id: '5', 
     name: 'Nuel', 
     emoji: '😇', 
     avatar: '👤',
-    freeTime: [{ dayIndex: 5, startHour: 12, endHour: 16 }], // Apr 16
-    color: '#FFD93D'
+    freeTime: [{ dayIndex: 5, startHour: 12, endHour: 16 }],
+    color: HIGHLIGHT_COLOR.BASE
   },
 ];
 

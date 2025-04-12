@@ -1,4 +1,5 @@
 import React from "react";
+import { useCalendarStore } from "../../stores/calendarStore";
 
 interface LeftPanelProps {
   isEditing: boolean;
@@ -6,6 +7,19 @@ interface LeftPanelProps {
 }
 
 const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
+  const { saveChanges, resetChanges } = useCalendarStore();
+
+  const handleDone = () => {
+    if (isEditing) {
+      saveChanges();
+    }
+    onToggleEdit();
+  };
+
+  const handleReset = () => {
+    resetChanges();
+  };
+
   return (
     <div className="w-full md:w-1/5 bg-white p-4 overflow-y-auto border-r border-gray-200">
       {/* User Profile Section */}
@@ -25,16 +39,20 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
       {/* Action Buttons */}
       <div className="flex justify-between gap-2">
         <button 
-          className={`px-4 py-2 text-white rounded-lg font-['Arial'] transition-colors
-            ${isEditing 
+          className={`px-4 py-2 text-white rounded-lg font-['Arial'] ${
+            isEditing 
               ? 'bg-gray-500 hover:bg-gray-600' 
               : 'bg-green-500 hover:bg-green-600'
-            }`}
-          onClick={onToggleEdit}
+          }`}
+          onClick={handleDone}
         >
           {isEditing ? 'Done' : 'Add on'}
         </button>
-        <button className="px-4 py-2 bg-blue-500 text-white rounded-lg font-['Arial']">
+        <button 
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg font-['Arial'] hover:bg-blue-600"
+          onClick={handleReset}
+          disabled={!isEditing}
+        >
           Reset
         </button>
       </div>

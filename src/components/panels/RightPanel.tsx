@@ -39,12 +39,10 @@ const RightPanel: React.FC = () => {
 
   return (
     <div className="w-full md:w-1/5 bg-white p-4 overflow-y-auto border-l border-gray-200">
-      {/* Rainbow Title with Animation */}
       <h2 className="text-2xl font-bold mb-6 animate-bounce bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
         Pick a legend here!
       </h2>
 
-      {/* User Selection Dropdown */}
       <select
         className="w-full p-2 mb-6 border rounded-lg bg-gray-50"
         onChange={handleUserSelect}
@@ -58,14 +56,15 @@ const RightPanel: React.FC = () => {
         ))}
       </select>
 
-      {/* Selected Users List */}
       {selectedUsers.length > 0 && (
         <div className="border-t pt-4">
           <h3 className="text-sm font-semibold text-gray-600 mb-3">Selected Friends:</h3>
           <div className="space-y-2">
             {selectedUsers.map(user => (
-              <div key={user.id} 
-                   className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+              <div 
+                key={user.id} 
+                className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+              >
                 <div className="flex items-center gap-2">
                   <span>{user.avatar}</span>
                   <span>{user.name}</span>

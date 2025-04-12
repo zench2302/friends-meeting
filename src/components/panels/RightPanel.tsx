@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAvailabilityStore } from "../../stores/availabilityStore";
 
 interface User {
   id: string;
@@ -18,6 +19,7 @@ const initialUsers: User[] = [
 const RightPanel: React.FC = () => {
   const [availableUsers, setAvailableUsers] = useState<User[]>(initialUsers);
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+  const { toggleUser } = useAvailabilityStore();
 
   const handleUserSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = event.target.value;
@@ -26,6 +28,7 @@ const RightPanel: React.FC = () => {
     if (selectedUser) {
       setSelectedUsers([...selectedUsers, selectedUser]);
       setAvailableUsers(availableUsers.filter(user => user.id !== selectedId));
+      toggleUser(selectedId);
     }
   };
 
@@ -34,6 +37,7 @@ const RightPanel: React.FC = () => {
     if (removedUser) {
       setSelectedUsers(selectedUsers.filter(user => user.id !== userId));
       setAvailableUsers([...availableUsers, removedUser]);
+      toggleUser(userId);
     }
   };
 

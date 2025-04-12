@@ -1,5 +1,6 @@
 import React from "react";
 import { useCalendarStore } from "../../stores/calendarStore";
+import { useAvailabilityStore } from "../../stores/availabilityStore";
 
 interface CenterPanelProps {
   isEditing: boolean;
@@ -37,8 +38,22 @@ const CenterPanel: React.FC<CenterPanelProps> = ({ isEditing }) => {
   };
 
   const getSlotColor = (dayIndex: number, slotIndex: number) => {
-    const slotKey = `${dayIndex}-${slotIndex}`;
-    return selectedSlots.has(slotKey) ? '#4ade80' : 'white';
+    const { selectedUserIds, availabilities } = useAvailabilityStore();
+    if (selectedUserIds.size === 0) return 'white';
+
+    let overlappingUsers = 0;
+    availabilities.forEach(({ userId, availability }) => {
+      if (selectedUserIds.has(userId) &&
+          dayIndex === availability.dayIndex &&
+          slotIndex >= availability.startSlot &&
+          slotIndex < availability.endSlot) {
+        overlappingUsers++;
+      }
+    });
+
+    if (overlappingUsers === 0) return 'white';
+    const intensity = Math.min(0.2 + (overlappingUsers * 0.2), 1);
+    return `rgba(74, 222, 128, ${intensity})`;
   };
 
   return (

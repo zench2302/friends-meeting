@@ -1,25 +1,64 @@
 import React, { useState } from "react";
 import { useAvailabilityStore } from "../../stores/availabilityStore";
+import { useCalendarStore } from "../../stores/calendarStore";
 
 interface User {
   id: string;
   name: string;
   emoji: string;
   avatar: string;
+  freeTime: { dayIndex: number; startHour: number; endHour: number }[];
+  color: string;
 }
 
 const initialUsers: User[] = [
-  { id: '1', name: 'Iheb', emoji: '😄', avatar: '👤' },
-  { id: '2', name: 'Himanshu', emoji: '😢', avatar: '👤' },
-  { id: '3', name: 'Rio', emoji: '😂', avatar: '👤' },
-  { id: '4', name: 'Kevin', emoji: '😍', avatar: '👤' },
-  { id: '5', name: 'Nuel', emoji: '😇', avatar: '👤' },
+  { 
+    id: '1', 
+    name: 'Iheb', 
+    emoji: '😄', 
+    avatar: '👤',
+    freeTime: [{ dayIndex: 4, startHour: 13, endHour: 15 }], // Apr 15
+    color: '#FF6B6B' 
+  },
+  { 
+    id: '2', 
+    name: 'Himanshu', 
+    emoji: '😢', 
+    avatar: '👤',
+    freeTime: [{ dayIndex: 4, startHour: 16, endHour: 18 }], // Apr 15
+    color: '#4ECDC4'
+  },
+  { 
+    id: '3', 
+    name: 'Rio', 
+    emoji: '😂', 
+    avatar: '👤',
+    freeTime: [{ dayIndex: 4, startHour: 11, endHour: 17 }], // Apr 15
+    color: '#45B7D1'
+  },
+  { 
+    id: '4', 
+    name: 'Kevin', 
+    emoji: '😍', 
+    avatar: '👤',
+    freeTime: [{ dayIndex: 5, startHour: 15, endHour: 17 }], // Apr 16
+    color: '#96CEB4'
+  },
+  { 
+    id: '5', 
+    name: 'Nuel', 
+    emoji: '😇', 
+    avatar: '👤',
+    freeTime: [{ dayIndex: 5, startHour: 12, endHour: 16 }], // Apr 16
+    color: '#FFD93D'
+  },
 ];
 
 const RightPanel: React.FC = () => {
   const [availableUsers, setAvailableUsers] = useState<User[]>(initialUsers);
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const { toggleUser } = useAvailabilityStore();
+  const { addSelectedFriend, removeSelectedFriend } = useCalendarStore();
 
   const handleUserSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = event.target.value;
@@ -29,6 +68,7 @@ const RightPanel: React.FC = () => {
       setSelectedUsers([...selectedUsers, selectedUser]);
       setAvailableUsers(availableUsers.filter(user => user.id !== selectedId));
       toggleUser(selectedId);
+      addSelectedFriend(selectedUser); // 直接使用用户的预定义空闲时间
     }
   };
 
@@ -38,6 +78,7 @@ const RightPanel: React.FC = () => {
       setSelectedUsers(selectedUsers.filter(user => user.id !== userId));
       setAvailableUsers([...availableUsers, removedUser]);
       toggleUser(userId);
+      removeSelectedFriend(userId);
     }
   };
 

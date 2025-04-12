@@ -1,13 +1,12 @@
 import React from "react";
 import { useCalendarStore } from "../../stores/calendarStore";
-import { useAvailabilityStore } from "../../stores/availabilityStore";
 
 interface CenterPanelProps {
   isEditing: boolean;
 }
 
 const CenterPanel: React.FC<CenterPanelProps> = ({ isEditing }) => {
-  const { selectedSlots, toggleSlot } = useCalendarStore();
+  const { selectedSlots, toggleSlot, selectedFriends } = useCalendarStore();
 
   // Generate array of next 7 days starting from today
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -38,22 +37,30 @@ const CenterPanel: React.FC<CenterPanelProps> = ({ isEditing }) => {
   };
 
   const getSlotColor = (dayIndex: number, slotIndex: number) => {
-    const { selectedUserIds, availabilities } = useAvailabilityStore();
-    if (selectedUserIds.size === 0) return 'white';
+    const slotKey = `${dayIndex}-${slotIndex}`;
+    const hour = Math.floor(slotIndex / 2);
+    
+    // 用户手动选择的时间槽显示实心绿色
+    if (selectedSlots.has(slotKey)) {
+      return 'rgb(74, 222, 128)';
+    }
 
-    let overlappingUsers = 0;
-    availabilities.forEach(({ userId, availability }) => {
-      if (selectedUserIds.has(userId) &&
-          dayIndex === availability.dayIndex &&
-          slotIndex >= availability.startSlot &&
-          slotIndex < availability.endSlot) {
-        overlappingUsers++;
-      }
-    });
+    // 检查是否在任何用户的空闲时间内
+    const overlappingFriends = selectedFriends.filter(friend => 
+      friend.freeTime.some(slot => 
+        slot.dayIndex === dayIndex && 
+        hour >= slot.startHour && 
+        hour < slot.endHour
+      )
+    );
 
-    if (overlappingUsers === 0) return 'white';
-    const intensity = Math.min(0.2 + (overlappingUsers * 0.2), 1);
-    return `rgba(74, 222, 128, ${intensity})`;
+    if (overlappingFriends.length === 0) {
+      return 'white';
+    }
+
+    // 根据重叠的人数增加不透明度
+    const opacity = Math.min(0.2 + (overlappingFriends.length * 0.2), 0.9);
+    return `rgba(74, 222, 128, ${opacity})`; // 使用统一的绿色，仅改变透明度
   };
 
   return (

@@ -5,19 +5,22 @@ interface CalendarState {
   selectedSlots: Set<string>;
   originalState: Set<string>;
   currentFriend: Friend | null;
+  selectedFriends: Friend[];
   
-  // Actions
   toggleSlot: (slotKey: string) => void;
   saveChanges: () => void;
   resetChanges: () => void;
   setCurrentFriend: (friend: Friend) => void;
   initializeState: (slots: Set<string>) => void;
+  addSelectedFriend: (friend: Friend) => void;
+  removeSelectedFriend: (friendId: string) => void;
 }
 
-export const useCalendarStore = create<CalendarState>((set, get) => ({
+export const useCalendarStore = create<CalendarState>((set) => ({
   selectedSlots: new Set<string>(),
   originalState: new Set<string>(),
   currentFriend: null,
+  selectedFriends: [],
 
   toggleSlot: (slotKey: string) => {
     set((state) => {
@@ -33,13 +36,13 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
 
   saveChanges: () => {
     set((state) => ({
-      originalState: new Set(state.selectedSlots)
+      originalState: new Set(state.selectedSlots) // 保存当前选择作为新的初始状态
     }));
   },
 
   resetChanges: () => {
     set((state) => ({
-      selectedSlots: new Set(state.originalState)
+      selectedSlots: new Set(state.originalState) // 恢复到初始状态
     }));
   },
 
@@ -52,5 +55,17 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
       originalState: new Set(slots),
       selectedSlots: new Set(slots)
     });
+  },
+
+  addSelectedFriend: (friend: Friend) => {
+    set((state) => ({
+      selectedFriends: [...state.selectedFriends, friend]
+    }));
+  },
+
+  removeSelectedFriend: (friendId: string) => {
+    set((state) => ({
+      selectedFriends: state.selectedFriends.filter(f => f.id !== friendId)
+    }));
   }
 }));

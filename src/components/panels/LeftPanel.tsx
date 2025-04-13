@@ -22,21 +22,23 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { saveChanges, resetChanges, initializeState, selectedSlots } = useCalendarStore();
-  const { updateCurrentUserAvailability, getCurrentUserAvailability } = useAvailabilityStore();
+  const { updateCurrentUserAvailability, getUserAvailability, setCurrentUser } = useAvailabilityStore();
 
   const handleDone = () => {
     if (isEditing) {
       const currentUser = allUsers.find(u => u.id === activeUserId);
-      updateCurrentUserAvailability({
-        slots: Array.from(selectedSlots),
-        user: {
-          id: activeUserId,
-          name: currentUser?.name || '',
-          emoji: currentUser?.emoji || '',
-          avatar: currentUser?.avatar || ''
-        }
-      });
-      saveChanges();
+      if (currentUser) {
+        updateCurrentUserAvailability({
+          slots: Array.from(selectedSlots),
+          user: {
+            id: activeUserId,
+            name: currentUser.name,
+            emoji: currentUser.emoji,
+            avatar: currentUser.avatar
+          }
+        });
+        saveChanges();
+      }
     }
     onToggleEdit();
   };
@@ -51,9 +53,31 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
       setIsModalOpen(true);
       return;
     }
-    onUserSelect(newValue);
 
-    const userAvailability = getCurrentUserAvailability();
+    // 如果正在编辑状态，先保存当前用户的更改
+    if (isEditing) {
+      const currentUser = allUsers.find(u => u.id === activeUserId);
+      if (currentUser) {
+        updateCurrentUserAvailability({
+          slots: Array.from(selectedSlots),
+          user: {
+            id: activeUserId,
+            name: currentUser.name,
+            emoji: currentUser.emoji,
+            avatar: currentUser.avatar
+          }
+        });
+        saveChanges();
+      }
+      onToggleEdit(); // 退出编辑模式
+    }
+
+    // 切换到新用户
+    onUserSelect(newValue);
+    setCurrentUser(newValue);
+
+    // 从存储中获取新用户的可用时间
+    const userAvailability = getUserAvailability(newValue);
     const availableSlots = userAvailability.flatMap(range => {
       const slots = [];
       for (let slot = range.startSlot; slot <= range.endSlot; slot++) {
@@ -62,6 +86,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
       return slots;
     });
 
+    // 使用新用户的可用时间初始化日历状态
     initializeState(new Set(availableSlots));
   };
 

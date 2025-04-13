@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useCalendarStore } from "../../stores/calendarStore";
+import { useAvailabilityStore } from "../../stores/availabilityStore";
 import { UserData } from "../../types";
 
 interface RightPanelProps {
@@ -18,6 +19,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
   allUsers
 }) => {
   const { addOverlaySlots, removeOverlaySlots } = useCalendarStore();
+  const { getUserAvailability } = useAvailabilityStore();
 
   // Get available users (not selected and not active)
   const availableUsers = useMemo(() => 
@@ -33,8 +35,18 @@ const RightPanel: React.FC<RightPanelProps> = ({
   const handleUserSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = event.target.value;
     if (selectedId) {
+      // 获取选中用户的可用时间
+      const userAvailability = getUserAvailability(selectedId);
+      const availableSlots = userAvailability.flatMap(range => {
+        const slots = [];
+        for (let slot = range.startSlot; slot <= range.endSlot; slot++) {
+          slots.push(`${range.dayIndex}-${slot}`);
+        }
+        return slots;
+      });
+
       onUserSelect(selectedId);
-      addOverlaySlots(selectedId, []); // Initialize with empty slots
+      addOverlaySlots(selectedId, availableSlots);
     }
   };
 

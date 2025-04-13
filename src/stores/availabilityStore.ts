@@ -1,79 +1,145 @@
 import { create } from 'zustand';
+import { sync } from '@tonk/keepsync';
+import { CURRENT_USER_ID } from '../constants/user';
+import { UserData } from '../constants/users';
 
 type TimeRange = {
-  startSlot: number;  // 0-47 for half-hour slots
-  endSlot: number;    // 0-47 for half-hour slots
-  dayIndex: number;   // 0-6 for week days
+  startSlot: number;
+  endSlot: number;
+  dayIndex: number;
 };
 
 interface UserAvailability {
   userId: string;
-  availability: TimeRange;
+  availability: TimeRange[];
 }
 
 interface AvailabilityState {
-  selectedUserIds: Set<string>;
+  selectedUserIds: string[];
   availabilities: UserAvailability[];
+  currentUserId: string;
   toggleUser: (userId: string) => void;
+  updateUserAvailability: (userId: string, availability: TimeRange[]) => void;
+  setCurrentUser: (userId: string) => void;
+  getSelectedUserIdsAsSet: () => Set<string>;
+  updateCurrentUserAvailability: (slots: string[]) => void;
+  getCurrentUserAvailability: () => TimeRange[];
 }
 
-const getInitialAvailabilities = (): UserAvailability[] => {
-  const hoursToSlot = (hours: number, minutes: number = 0) => hours * 2 + (minutes === 30 ? 1 : 0);
-  
-  return [
-    {
-      userId: '1',
-      availability: {
-        dayIndex: 2, // Apr 13
-        startSlot: hoursToSlot(14),
-        endSlot: hoursToSlot(16)
-      }
-    },
-    {
-      userId: '2',
-      availability: {
-        dayIndex: 3, // Apr 14
-        startSlot: hoursToSlot(15),
-        endSlot: hoursToSlot(17)
-      }
-    },
-    {
-      userId: '3',
-      availability: {
-        dayIndex: 3, // Apr 14
-        startSlot: hoursToSlot(14),
-        endSlot: hoursToSlot(16)
-      }
-    },
-    {
-      userId: '4',
-      availability: {
-        dayIndex: 2, // Apr 13
-        startSlot: hoursToSlot(11),
-        endSlot: hoursToSlot(15)
-      }
-    },
-    {
-      userId: '5',
-      availability: {
-        dayIndex: 4, // Apr 15
-        startSlot: hoursToSlot(16),
-        endSlot: hoursToSlot(20)
-      }
-    }
-  ];
-};
+export const useAvailabilityStore = create<AvailabilityState>(
+  sync(
+    (set, get) => {
+      let selectedUsersSet: Set<string> | null = null;
 
-export const useAvailabilityStore = create<AvailabilityState>((set) => ({
-  selectedUserIds: new Set<string>(),
-  availabilities: getInitialAvailabilities(),
-  toggleUser: (userId: string) => set((state) => {
-    const newSelectedUserIds = new Set(state.selectedUserIds);
-    if (newSelectedUserIds.has(userId)) {
-      newSelectedUserIds.delete(userId);
-    } else {
-      newSelectedUserIds.add(userId);
+      const ensureArray = (value: unknown): string[] => {
+        if (Array.isArray(value)) return value;
+        return [];
+      };
+
+      return {
+        selectedUserIds: [],
+        availabilities: [],
+        currentUserId: CURRENT_USER_ID,
+
+        toggleUser: (userId: string) => {
+          const { currentUserId, selectedUserIds } = get();
+          if (userId === currentUserId) return;
+
+          const safeSelectedUserIds = ensureArray(selectedUserIds);
+          const index = safeSelectedUserIds.indexOf(userId);
+          const newSelected = index > -1
+            ? safeSelectedUserIds.filter(id => id !== userId)
+            : [...safeSelectedUserIds, userId];
+
+          selectedUsersSet = null;
+          set({ selectedUserIds: newSelected });
+        },
+
+        updateUserAvailability: (userId: string, availability: TimeRange[]) => {
+          const { availabilities } = get();
+          const current = availabilities.find(a => a.userId === userId);
+
+          if (current && JSON.stringify(current.availability) === JSON.stringify(availability)) {
+            return;
+          }
+
+          const newAvailabilities = [
+            ...availabilities.filter(a => a.userId !== userId),
+            { userId, availability }
+          ];
+
+          set({ availabilities: newAvailabilities });
+        },
+
+        setCurrentUser: (userId: string) => {
+          const { currentUserId, availabilities } = get();
+          if (userId === currentUserId) return;
+
+          selectedUsersSet = null;
+          set({
+            currentUserId: userId,
+            selectedUserIds: [],
+            availabilities
+          });
+        },
+
+        getSelectedUserIdsAsSet: () => {
+          const safeSelectedUserIds = ensureArray(get().selectedUserIds);
+          if (!selectedUsersSet) {
+            selectedUsersSet = new Set(safeSelectedUserIds);
+          }
+          return selectedUsersSet;
+        },
+
+        updateCurrentUserAvailability: (slots: string[]) => {
+          const { currentUserId } = get();
+          const availability = slots.map(slot => {
+            const [dayIndex, timeSlot] = slot.split('-').map(Number);
+            return {
+              dayIndex,
+              startSlot: timeSlot,
+              endSlot: timeSlot
+            };
+          });
+
+          // Merge consecutive slots
+          const mergedAvailability = availability.reduce((acc, curr) => {
+            const last = acc[acc.length - 1];
+            if (last && last.dayIndex === curr.dayIndex && last.endSlot + 1 === curr.startSlot) {
+              last.endSlot = curr.endSlot;
+              return acc;
+            }
+            return [...acc, curr];
+          }, [] as TimeRange[]);
+
+          set(state => ({
+            availabilities: [
+              ...state.availabilities.filter(a => a.userId !== currentUserId),
+              { userId: currentUserId, availability: mergedAvailability }
+            ]
+          }));
+        },
+
+        getCurrentUserAvailability: () => {
+          const { currentUserId, availabilities } = get();
+          return availabilities.find(a => a.userId === currentUserId)?.availability || [];
+        }
+      };
+    },
+    {
+      docId: 'availability-data',
+      collection: 'calendar',
+      initializeAsync: false,
+      syncOptions: {
+        throttle: 200,
+        blacklist: ['getSelectedUserIdsAsSet'],
+        batchSize: 1,
+        debounce: true,
+        onLoad: (state) => ({
+          ...state,
+          selectedUserIds: Array.isArray(state.selectedUserIds) ? state.selectedUserIds : []
+        })
+      }
     }
-    return { selectedUserIds: newSelectedUserIds };
-  })
-}));
+  )
+);

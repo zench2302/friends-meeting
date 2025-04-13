@@ -8,7 +8,7 @@ interface CenterPanelProps {
 }
 
 const CenterPanel: React.FC<CenterPanelProps> = ({ isEditing }) => {
-  const { selectedSlots, toggleSlot, selectedFriends } = useCalendarStore();
+  const { selectedSlots, toggleSlot, overlaySlots } = useCalendarStore();
 
   // Generate array of next 7 days starting from today
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -40,28 +40,26 @@ const CenterPanel: React.FC<CenterPanelProps> = ({ isEditing }) => {
 
   const getSlotColor = (dayIndex: number, slotIndex: number) => {
     const slotKey = `${dayIndex}-${slotIndex}`;
-    const hour = Math.floor(slotIndex / 2);
     
-    // 用户手动选择的时间槽
+    // 计算有多少用户的时间重叠
+    let overlappingCount = 0;
+
+    // 检查当前用户的选择
     if (selectedSlots.has(slotKey)) {
-      return HIGHLIGHT_COLOR.BASE;
+      overlappingCount++;
     }
 
-    // 检查是否在任何用户的空闲时间内
-    const overlappingFriends = selectedFriends.filter(friend => 
-      friend.freeTime.some(slot => 
-        slot.dayIndex === dayIndex && 
-        hour >= slot.startHour && 
-        hour < slot.endHour
-      )
-    );
-
-    if (overlappingFriends.length === 0) {
-      return 'white';
+    // 检查叠加显示的用户
+    for (const [_, slots] of overlaySlots) {
+      if (slots.has(slotKey)) {
+        overlappingCount++;
+      }
     }
 
-    // 使用重叠颜色
-    return HIGHLIGHT_COLOR.OVERLAP(overlappingFriends.length);
+    // 根据重叠数量返回对应深度的颜色
+    return overlappingCount > 0 
+      ? HIGHLIGHT_COLOR.OVERLAP(overlappingCount)
+      : 'white';
   };
 
   return (

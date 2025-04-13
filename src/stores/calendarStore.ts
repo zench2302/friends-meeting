@@ -6,6 +6,7 @@ interface CalendarState {
   originalState: Set<string>;
   currentFriend: Friend | null;
   selectedFriends: Friend[];
+  overlaySlots: Map<string, Set<string>>;  // userId -> Set of slot keys
   
   toggleSlot: (slotKey: string) => void;
   saveChanges: () => void;
@@ -14,6 +15,9 @@ interface CalendarState {
   initializeState: (slots: Set<string>) => void;
   addSelectedFriend: (friend: Friend) => void;
   removeSelectedFriend: (friendId: string) => void;
+  addOverlaySlots: (userId: string, slots: string[]) => void;
+  removeOverlaySlots: (userId: string) => void;
+  setUserFreeTime: (slots: string[]) => void;
 }
 
 export const useCalendarStore = create<CalendarState>((set) => ({
@@ -21,6 +25,7 @@ export const useCalendarStore = create<CalendarState>((set) => ({
   originalState: new Set<string>(),
   currentFriend: null,
   selectedFriends: [],
+  overlaySlots: new Map(),
 
   toggleSlot: (slotKey: string) => {
     set((state) => {
@@ -67,5 +72,24 @@ export const useCalendarStore = create<CalendarState>((set) => ({
     set((state) => ({
       selectedFriends: state.selectedFriends.filter(f => f.id !== friendId)
     }));
+  },
+
+  addOverlaySlots: (userId: string, slots: string[]) => 
+    set(state => ({
+      overlaySlots: new Map(state.overlaySlots).set(userId, new Set(slots))
+    })),
+
+  removeOverlaySlots: (userId: string) =>
+    set(state => {
+      const newMap = new Map(state.overlaySlots);
+      newMap.delete(userId);
+      return { overlaySlots: newMap };
+    }),
+
+  setUserFreeTime: (slots: string[]) => {
+    set({
+      selectedSlots: new Set(slots),
+      originalState: new Set(slots)
+    });
   }
 }));

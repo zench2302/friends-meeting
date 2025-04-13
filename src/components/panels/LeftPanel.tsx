@@ -1,5 +1,7 @@
 import React from "react";
 import { useCalendarStore } from "../../stores/calendarStore";
+import { useAvailabilityStore } from "../../stores/availabilityStore";
+import { ALL_USERS } from "../../constants/users";
 
 interface LeftPanelProps {
   isEditing: boolean;
@@ -7,10 +9,17 @@ interface LeftPanelProps {
 }
 
 const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
-  const { saveChanges, resetChanges } = useCalendarStore();
+  const { saveChanges, resetChanges, initializeState, selectedSlots } = useCalendarStore();
+  const { currentUserId, setCurrentUser, updateCurrentUserAvailability, getCurrentUserAvailability } = useAvailabilityStore();
+  const selectedUserIdsSet = useAvailabilityStore(state => state.getSelectedUserIdsAsSet());
+
+  const currentUser = ALL_USERS.find(u => u.id === currentUserId);
+  const availableUsers = ALL_USERS.filter(u => !selectedUserIdsSet.has(u.id));
 
   const handleDone = () => {
     if (isEditing) {
+      // 保存当前选择的时间槽
+      updateCurrentUserAvailability(Array.from(selectedSlots));
       saveChanges();
     }
     onToggleEdit();
@@ -20,23 +29,40 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
     resetChanges();
   };
 
+  const handleUserChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newUserId = event.target.value;
+    setCurrentUser(newUserId);
+
+    // 获取当前用户的空闲时间
+    const userAvailability = getCurrentUserAvailability();
+    const availableSlots = userAvailability.flatMap(range => {
+      const slots = [];
+      for (let slot = range.startSlot; slot <= range.endSlot; slot++) {
+        slots.push(`${range.dayIndex}-${slot}`);
+      }
+      return slots;
+    });
+
+    // 使用 initializeState 更新日历状态
+    initializeState(new Set(availableSlots));
+  };
+
   return (
     <div className="w-full md:w-1/5 bg-white p-4 overflow-y-auto border-r border-gray-200">
-      {/* User Profile Section */}
-      <div className="flex items-center gap-4 mb-6">
-        {/* User Avatar */}
-        <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
-          <img
-            src="/default-avatar.png"
-            alt="User Avatar"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        {/* User Name */}
-        <h2 className="text-xl font-semibold text-gray-800">Jia</h2>
+      <div className="mb-6">
+        <select
+          className="w-full p-2 border rounded-lg bg-gray-50"
+          value={currentUserId}
+          onChange={handleUserChange}
+        >
+          {availableUsers.map(user => (
+            <option key={user.id} value={user.id}>
+              {user.avatar} {user.name} {user.emoji}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {/* Action Buttons */}
       <div className="flex justify-between gap-2">
         <button 
           className={`px-4 py-2 text-white rounded-lg font-['Arial'] ${

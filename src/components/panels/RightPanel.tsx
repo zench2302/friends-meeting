@@ -1,85 +1,60 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useAvailabilityStore } from "../../stores/availabilityStore";
 import { useCalendarStore } from "../../stores/calendarStore";
-import { HIGHLIGHT_COLOR } from "../../constants/colors";
-
-interface User {
-  id: string;
-  name: string;
-  emoji: string;
-  avatar: string;
-  freeTime: { dayIndex: number; startHour: number; endHour: number }[];
-  color: string;
-}
-
-const initialUsers: User[] = [
-  { 
-    id: '1', 
-    name: 'Iheb', 
-    emoji: '😄', 
-    avatar: '👤',
-    freeTime: [{ dayIndex: 4, startHour: 13, endHour: 15 }],
-    color: HIGHLIGHT_COLOR.BASE
-  },
-  { 
-    id: '2', 
-    name: 'Himanshu', 
-    emoji: '😢', 
-    avatar: '👤',
-    freeTime: [{ dayIndex: 4, startHour: 16, endHour: 18 }],
-    color: HIGHLIGHT_COLOR.BASE
-  },
-  { 
-    id: '3', 
-    name: 'Rio', 
-    emoji: '😂', 
-    avatar: '👤',
-    freeTime: [{ dayIndex: 4, startHour: 11, endHour: 17 }],
-    color: HIGHLIGHT_COLOR.BASE
-  },
-  { 
-    id: '4', 
-    name: 'Kevin', 
-    emoji: '😍', 
-    avatar: '👤',
-    freeTime: [{ dayIndex: 5, startHour: 15, endHour: 17 }],
-    color: HIGHLIGHT_COLOR.BASE
-  },
-  { 
-    id: '5', 
-    name: 'Nuel', 
-    emoji: '😇', 
-    avatar: '👤',
-    freeTime: [{ dayIndex: 5, startHour: 12, endHour: 16 }],
-    color: HIGHLIGHT_COLOR.BASE
-  },
-];
+import { ALL_USERS } from "../../constants/users";
 
 const RightPanel: React.FC = () => {
-  const [availableUsers, setAvailableUsers] = useState<User[]>(initialUsers);
-  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
-  const { toggleUser } = useAvailabilityStore();
-  const { addSelectedFriend, removeSelectedFriend } = useCalendarStore();
+  const { currentUserId, selectedUserIds, toggleUser, availabilities } = useAvailabilityStore();
+  const { addSelectedFriend, removeSelectedFriend, addOverlaySlots, removeOverlaySlots } = useCalendarStore();
+
+  const safeIncludes = useCallback((arr: any[] | unknown, item: unknown) => {
+    return Array.isArray(arr) && arr.includes(item);
+  }, []);
+
+  const availableUsers = React.useMemo(() => 
+    ALL_USERS.filter(u => 
+      u.id !== currentUserId && !safeIncludes(selectedUserIds, u.id)
+    ), [currentUserId, selectedUserIds, safeIncludes]);
+  
+  const selectedUsers = React.useMemo(() => 
+    ALL_USERS.filter(u => safeIncludes(selectedUserIds, u.id)
+  ), [selectedUserIds, safeIncludes]);
 
   const handleUserSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = event.target.value;
-    const selectedUser = availableUsers.find(user => user.id === selectedId);
+    const selectedUser = ALL_USERS.find(user => user.id === selectedId);
+    const userAvailability = availabilities.find(a => a.userId === selectedId)?.availability || [];
     
     if (selectedUser) {
-      setSelectedUsers([...selectedUsers, selectedUser]);
-      setAvailableUsers(availableUsers.filter(user => user.id !== selectedId));
       toggleUser(selectedId);
-      addSelectedFriend(selectedUser); // 直接使用用户的预定义空闲时间
+      
+      // Convert availability to slot keys
+      const slotKeys = userAvailability.flatMap(range => {
+        const slots = [];
+        for (let slot = range.startSlot; slot <= range.endSlot; slot++) {
+          slots.push(`${range.dayIndex}-${slot}`);
+        }
+        return slots;
+      });
+      
+      addOverlaySlots(selectedId, slotKeys);
+      addSelectedFriend({
+        ...selectedUser,
+        freeTime: userAvailability.map(slot => ({
+          dayIndex: slot.dayIndex,
+          startHour: Math.floor(slot.startSlot / 2),
+          endHour: Math.floor(slot.endSlot / 2)
+        }))
+      });
     }
   };
 
   const handleUserRemove = (userId: string) => {
     const removedUser = selectedUsers.find(user => user.id === userId);
     if (removedUser) {
-      setSelectedUsers(selectedUsers.filter(user => user.id !== userId));
-      setAvailableUsers([...availableUsers, removedUser]);
       toggleUser(userId);
       removeSelectedFriend(userId);
+      removeOverlaySlots(userId);
     }
   };
 
@@ -131,4 +106,4 @@ const RightPanel: React.FC = () => {
   );
 };
 
-export default RightPanel;
+export default React.memo(RightPanel);

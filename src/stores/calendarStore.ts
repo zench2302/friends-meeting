@@ -15,7 +15,7 @@ interface CalendarState {
   initializeState: (slots: Set<string>) => void;
   addSelectedFriend: (friend: Friend) => void;
   removeSelectedFriend: (friendId: string) => void;
-  addOverlaySlots: (userId: string, slots: string[]) => void;
+  addOverlaySlots: (userId: string, slots: string[]) => void; 
   removeOverlaySlots: (userId: string) => void;
   setUserFreeTime: (slots: string[]) => void;
 }

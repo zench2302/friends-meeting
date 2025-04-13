@@ -18,8 +18,17 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
 
   const handleDone = () => {
     if (isEditing) {
-      // 保存当前选择的时间槽
-      updateCurrentUserAvailability(Array.from(selectedSlots));
+      const currentUser = ALL_USERS.find(u => u.id === currentUserId);
+      // 保存当前选择的时间槽，包含用户信息
+      updateCurrentUserAvailability({
+        slots: Array.from(selectedSlots),
+        user: {
+          id: currentUserId,
+          name: currentUser?.name || '',
+          emoji: currentUser?.emoji || '',
+          avatar: currentUser?.avatar || ''
+        }
+      });
       saveChanges();
     }
     onToggleEdit();

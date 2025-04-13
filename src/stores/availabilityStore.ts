@@ -7,11 +7,22 @@ type TimeRange = {
   startSlot: number;
   endSlot: number;
   dayIndex: number;
+  userName?: string;
+  userEmoji?: string;
+  userAvatar?: string;
 };
 
 interface UserAvailability {
   userId: string;
   availability: TimeRange[];
+  userName?: string;
+  userEmoji?: string;
+  userAvatar?: string;
+}
+
+interface SaveAvailabilityParams {
+  slots: string[];
+  user: UserData;
 }
 
 interface AvailabilityState {
@@ -22,7 +33,7 @@ interface AvailabilityState {
   updateUserAvailability: (userId: string, availability: TimeRange[]) => void;
   setCurrentUser: (userId: string) => void;
   getSelectedUserIdsAsSet: () => Set<string>;
-  updateCurrentUserAvailability: (slots: string[]) => void;
+  updateCurrentUserAvailability: (params: SaveAvailabilityParams) => void;
   getCurrentUserAvailability: () => TimeRange[];
 }
 
@@ -91,21 +102,27 @@ export const useAvailabilityStore = create<AvailabilityState>(
           return selectedUsersSet;
         },
 
-        updateCurrentUserAvailability: (slots: string[]) => {
+        updateCurrentUserAvailability: ({ slots, user }: SaveAvailabilityParams) => {
           const { currentUserId } = get();
           const availability = slots.map(slot => {
             const [dayIndex, timeSlot] = slot.split('-').map(Number);
             return {
               dayIndex,
               startSlot: timeSlot,
-              endSlot: timeSlot
+              endSlot: timeSlot,
+              userName: user.name,
+              userEmoji: user.emoji,
+              userAvatar: user.avatar
             };
           });
 
           // Merge consecutive slots
           const mergedAvailability = availability.reduce((acc, curr) => {
             const last = acc[acc.length - 1];
-            if (last && last.dayIndex === curr.dayIndex && last.endSlot + 1 === curr.startSlot) {
+            if (last && 
+                last.dayIndex === curr.dayIndex && 
+                last.endSlot + 1 === curr.startSlot &&
+                last.userName === curr.userName) {
               last.endSlot = curr.endSlot;
               return acc;
             }
@@ -115,7 +132,13 @@ export const useAvailabilityStore = create<AvailabilityState>(
           set(state => ({
             availabilities: [
               ...state.availabilities.filter(a => a.userId !== currentUserId),
-              { userId: currentUserId, availability: mergedAvailability }
+              { 
+                userId: currentUserId, 
+                availability: mergedAvailability,
+                userName: user.name,
+                userEmoji: user.emoji,
+                userAvatar: user.avatar
+              }
             ]
           }));
         },

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { LeftPanel, CenterPanel, RightPanel } from "../components/panels";
+import DebugStorePanel from "../components/debug/DebugStorePanel";
 
 const HelloWorld = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -47,6 +48,8 @@ const HelloWorld = () => {
           <RightPanel />
         </div>
       </main>
+
+      <DebugStorePanel />
     </div>
   );
 };

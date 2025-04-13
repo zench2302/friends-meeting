@@ -1,29 +1,36 @@
-import React from "react";
+import React, { useState } from "react";
 import { useCalendarStore } from "../../stores/calendarStore";
 import { useAvailabilityStore } from "../../stores/availabilityStore";
-import { ALL_USERS } from "../../constants/users";
+import { HIGHLIGHT_COLOR } from "../../constants/colors";
+import CreateLegendModal from "../modals/CreateLegendModal";
+import { UserData } from "../../types";
 
 interface LeftPanelProps {
   isEditing: boolean;
   onToggleEdit: () => void;
+  activeUserId: string;
+  onUserSelect: (userId: string) => void;
+  allUsers: UserData[];
 }
 
-const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
+const LeftPanel: React.FC<LeftPanelProps> = ({ 
+  isEditing, 
+  onToggleEdit, 
+  activeUserId, 
+  onUserSelect,
+  allUsers 
+}) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { saveChanges, resetChanges, initializeState, selectedSlots } = useCalendarStore();
-  const { currentUserId, setCurrentUser, updateCurrentUserAvailability, getCurrentUserAvailability } = useAvailabilityStore();
-  const selectedUserIdsSet = useAvailabilityStore(state => state.getSelectedUserIdsAsSet());
-
-  const currentUser = ALL_USERS.find(u => u.id === currentUserId);
-  const availableUsers = ALL_USERS.filter(u => !selectedUserIdsSet.has(u.id));
+  const { updateCurrentUserAvailability, getCurrentUserAvailability } = useAvailabilityStore();
 
   const handleDone = () => {
     if (isEditing) {
-      const currentUser = ALL_USERS.find(u => u.id === currentUserId);
-      // 保存当前选择的时间槽，包含用户信息
+      const currentUser = allUsers.find(u => u.id === activeUserId);
       updateCurrentUserAvailability({
         slots: Array.from(selectedSlots),
         user: {
-          id: currentUserId,
+          id: activeUserId,
           name: currentUser?.name || '',
           emoji: currentUser?.emoji || '',
           avatar: currentUser?.avatar || ''
@@ -39,10 +46,13 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
   };
 
   const handleUserChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newUserId = event.target.value;
-    setCurrentUser(newUserId);
+    const newValue = event.target.value;
+    if (newValue === 'new') {
+      setIsModalOpen(true);
+      return;
+    }
+    onUserSelect(newValue);
 
-    // 获取当前用户的空闲时间
     const userAvailability = getCurrentUserAvailability();
     const availableSlots = userAvailability.flatMap(range => {
       const slots = [];
@@ -52,8 +62,21 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
       return slots;
     });
 
-    // 使用 initializeState 更新日历状态
     initializeState(new Set(availableSlots));
+  };
+
+  const handleCreateLegend = (name: string) => {
+    const newUser = {
+      id: `user-${Date.now()}`,
+      name,
+      emoji: "👤",
+      avatar: "👤",
+      color: HIGHLIGHT_COLOR.BASE
+    };
+    allUsers.push(newUser);
+    onUserSelect(newUser.id);
+    initializeState(new Set());
+    setIsModalOpen(false);
   };
 
   return (
@@ -61,10 +84,12 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
       <div className="mb-6">
         <select
           className="w-full p-2 border rounded-lg bg-gray-50"
-          value={currentUserId}
+          value={activeUserId}
           onChange={handleUserChange}
         >
-          {availableUsers.map(user => (
+          <option value="" disabled>Select a legend...</option>
+          <option value="new" className="font-semibold text-purple-600">+ New Legend</option>
+          {allUsers.map(user => (
             <option key={user.id} value={user.id}>
               {user.avatar} {user.name} {user.emoji}
             </option>
@@ -91,6 +116,12 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isEditing, onToggleEdit }) => {
           Reset
         </button>
       </div>
+
+      <CreateLegendModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleCreateLegend}
+      />
     </div>
   );
 };

@@ -4,6 +4,12 @@ export interface TimeSlot {
   endHour: number;
 }
 
+export interface UserAvailability {
+  dayIndex: number;
+  startSlot: number;
+  endSlot: number;
+}
+
 export interface Friend {
   id: string;
   name: string;

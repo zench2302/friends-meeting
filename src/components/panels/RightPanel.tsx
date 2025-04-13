@@ -1,61 +1,46 @@
-import React, { useState, useCallback } from "react";
-import { useAvailabilityStore } from "../../stores/availabilityStore";
+import React, { useMemo } from "react";
 import { useCalendarStore } from "../../stores/calendarStore";
-import { ALL_USERS } from "../../constants/users";
+import { UserData } from "../../types";
 
-const RightPanel: React.FC = () => {
-  const { currentUserId, selectedUserIds, toggleUser, availabilities } = useAvailabilityStore();
-  const { addSelectedFriend, removeSelectedFriend, addOverlaySlots, removeOverlaySlots } = useCalendarStore();
+interface RightPanelProps {
+  selectedUserIds: string[];
+  activeUserId: string;
+  onUserSelect: (userId: string) => void;
+  onUserRemove: (userId: string) => void;
+  allUsers: UserData[];
+}
 
-  const safeIncludes = useCallback((arr: any[] | unknown, item: unknown) => {
-    return Array.isArray(arr) && arr.includes(item);
-  }, []);
+const RightPanel: React.FC<RightPanelProps> = ({
+  selectedUserIds,
+  activeUserId,
+  onUserSelect,
+  onUserRemove,
+  allUsers
+}) => {
+  const { addOverlaySlots, removeOverlaySlots } = useCalendarStore();
 
-  const availableUsers = React.useMemo(() => 
-    ALL_USERS.filter(u => 
-      u.id !== currentUserId && !safeIncludes(selectedUserIds, u.id)
-    ), [currentUserId, selectedUserIds, safeIncludes]);
+  // Get available users (not selected and not active)
+  const availableUsers = useMemo(() => 
+    allUsers.filter(u => 
+      u.id !== activeUserId && !selectedUserIds.includes(u.id)
+    ), [allUsers, activeUserId, selectedUserIds]);
   
-  const selectedUsers = React.useMemo(() => 
-    ALL_USERS.filter(u => safeIncludes(selectedUserIds, u.id)
-  ), [selectedUserIds, safeIncludes]);
+  // Get selected users
+  const selectedUsers = useMemo(() => 
+    allUsers.filter(u => selectedUserIds.includes(u.id)
+  ), [allUsers, selectedUserIds]);
 
   const handleUserSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = event.target.value;
-    const selectedUser = ALL_USERS.find(user => user.id === selectedId);
-    const userAvailability = availabilities.find(a => a.userId === selectedId)?.availability || [];
-    
-    if (selectedUser) {
-      toggleUser(selectedId);
-      
-      // Convert availability to slot keys
-      const slotKeys = userAvailability.flatMap(range => {
-        const slots = [];
-        for (let slot = range.startSlot; slot <= range.endSlot; slot++) {
-          slots.push(`${range.dayIndex}-${slot}`);
-        }
-        return slots;
-      });
-      
-      addOverlaySlots(selectedId, slotKeys);
-      addSelectedFriend({
-        ...selectedUser,
-        freeTime: userAvailability.map(slot => ({
-          dayIndex: slot.dayIndex,
-          startHour: Math.floor(slot.startSlot / 2),
-          endHour: Math.floor(slot.endSlot / 2)
-        }))
-      });
+    if (selectedId) {
+      onUserSelect(selectedId);
+      addOverlaySlots(selectedId, []); // Initialize with empty slots
     }
   };
 
   const handleUserRemove = (userId: string) => {
-    const removedUser = selectedUsers.find(user => user.id === userId);
-    if (removedUser) {
-      toggleUser(userId);
-      removeSelectedFriend(userId);
-      removeOverlaySlots(userId);
-    }
+    onUserRemove(userId);
+    removeOverlaySlots(userId);
   };
 
   return (
